@@ -4,6 +4,9 @@ main: chbya\Bots\Main
 api: [5.0.0]
 author: chbya
 
+events:
+  - PlayerJoinEvent
+
 commands:
   arena:
     description: Manage PvP bot arenas

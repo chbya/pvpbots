@@ -23,12 +23,12 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerDropItemEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\player\PlayerDeathEvent;
+use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\world\Position;
-use chbya\Bots\Arena;
 
 class Main extends PluginBase implements Listener {
     
@@ -37,6 +37,7 @@ class Main extends PluginBase implements Listener {
     private array $activeArenas = [];
     private array $equipmentPresets = [];
     private array $playerPresets = [];
+    private array $playerSettings = [];
     private array $arenas = [];
     private Config $arenaConfig;
     private ?Skin $defaultSkin = null;
@@ -48,6 +49,7 @@ class Main extends PluginBase implements Listener {
         $this->verifyEquipmentPresets();
         $this->loadDefaultSkin();
         $this->loadLobbySpawn();
+        $this->loadPlayerSettings();
         
         $this->arenaConfig = new Config($this->getDataFolder() . "arenas.yml", Config::YAML);
         $this->loadArenas();
@@ -71,6 +73,28 @@ class Main extends PluginBase implements Listener {
             $bot->setBotConfig($config);
             return $bot;
         }, ['PvPBot']);
+    }
+
+    private function loadPlayerSettings(): void {
+        $config = new Config($this->getDataFolder() . "player_settings.yml", Config::YAML);
+        $this->playerSettings = $config->getAll();
+    }
+
+    private function savePlayerSettings(): void {
+        $config = new Config($this->getDataFolder() . "player_settings.yml", Config::YAML);
+        $config->setAll($this->playerSettings);
+        $config->save();
+    }
+
+    public function onPlayerJoin(PlayerJoinEvent $event): void {
+        $player = $event->getPlayer();
+        if(!isset($this->playerSettings[$player->getName()])) {
+            $this->playerSettings[$player->getName()] = [
+                'lastMenuOption' => 0,
+                'lastPreset' => 0
+            ];
+            $this->savePlayerSettings();
+        }
     }
 
     private function loadLobbySpawn(): void {
@@ -343,6 +367,10 @@ class Main extends PluginBase implements Listener {
         $form = new SimpleForm(function(Player $player, ?int $data) {
             if($data === null) return;
             
+            // Save the player's last selected option
+            $this->playerSettings[$player->getName()]['lastMenuOption'] = $data;
+            $this->savePlayerSettings();
+            
             switch($data) {
                 case 0: // Equipment Presets
                     $this->showEquipmentPresetsMenu($player);
@@ -351,12 +379,13 @@ class Main extends PluginBase implements Listener {
                     break;
             }
         });
-
+    
         $form->setTitle("§l§cBot Settings");
         $form->setContent("§7Configure bot and player equipment");
         $form->addButton("§l§cEquipment Presets\n§r§7Click to configure");
         $form->addButton("§l§cBack\n§r§7Return to main menu");
         
+        // Remove the setDefault call since it's not supported
         $player->sendForm($form);
     }
 
@@ -373,6 +402,11 @@ class Main extends PluginBase implements Listener {
             if(isset($data[1]) && isset($presetNames[$data[1]])) {
                 $presetName = $presetNames[$data[1]];
                 $this->playerPresets[$player->getName()] = $presetName;
+                
+                // Save the player's last selected preset
+                $this->playerSettings[$player->getName()]['lastPreset'] = $data[1];
+                $this->savePlayerSettings();
+                
                 $player->sendMessage(TF::GREEN . "Equipment preset '" . $presetName . "' selected! Equipment will be given when you join a game.");
             }
         });
@@ -381,7 +415,7 @@ class Main extends PluginBase implements Listener {
         $form->addLabel("§7Select equipment preset for bot and player");
         
         $presetNames = array_values(array_keys($this->equipmentPresets));
-        $form->addDropdown("§7Select Preset", $presetNames);
+        $form->addDropdown("§7Select Preset", $presetNames, $this->playerSettings[$player->getName()]['lastPreset'] ?? 0);
         
         $player->sendForm($form);
     }
@@ -420,12 +454,12 @@ class Main extends PluginBase implements Listener {
             $player->sendMessage(TF::RED . "No arenas are set up! Please contact an administrator.");
             return;
         }
-    
+
         // Clear and teleport player
         $player->getInventory()->clearAll();
         $player->getArmorInventory()->clearAll();
         $player->teleport($arena->getPlayerSpawn());
-    
+
         // Convert Position to Location for the bot
         $botSpawnPos = $arena->getBotSpawn();
         $botLocation = new Location(
@@ -436,7 +470,7 @@ class Main extends PluginBase implements Listener {
             0, // yaw
             0  // pitch
         );
-    
+
         $bot = new PvPBotEntity($botLocation, $this->defaultSkin);
         $bot->setBotConfig($this->botConfigs[$difficulty]);
         
@@ -451,7 +485,7 @@ class Main extends PluginBase implements Listener {
         }
         
         $bot->spawnToAll();
-    
+
         $this->activeArenas[$player->getName()] = true;
         $player->sendMessage(TF::GREEN . "Match started against " . $difficulty . " difficulty bot!");
     }
@@ -567,17 +601,6 @@ class Main extends PluginBase implements Listener {
         }
     }
 
-    private function scheduleCleanup(Player $player): void {
-        $this->getScheduler()->scheduleDelayedTask(new ClosureTask(
-            function() use ($player): void {
-                if($player->isOnline()) {
-                    $this->cleanupPlayer($player);
-                    $this->teleportToLobby($player);
-                }
-            }
-        ), 60); // 3 seconds = 60 ticks
-    }
-
     private function cleanupPlayer(Player $player): void {
         if(isset($this->activeArenas[$player->getName()])) {
             $player->getInventory()->clearAll();
@@ -615,8 +638,9 @@ class Main extends PluginBase implements Listener {
                 20
             );
             
-            // Schedule cleanup and teleport after 3 seconds
-            $this->scheduleCleanup($player);
+            // Immediately teleport to lobby and cleanup
+            $this->cleanupPlayer($player);
+            $this->teleportToLobby($player);
         }
     }
 
@@ -643,8 +667,15 @@ class Main extends PluginBase implements Listener {
                         20
                     );
                     
-                    // Schedule cleanup and teleport after 3 seconds
-                    $this->scheduleCleanup($killer);
+                    // Schedule cleanup and teleport after 3 seconds for winner
+                    $this->getScheduler()->scheduleDelayedTask(new ClosureTask(
+                        function() use ($killer): void {
+                            if($killer->isOnline()) {
+                                $this->cleanupPlayer($killer);
+                                $this->teleportToLobby($killer);
+                            }
+                        }
+                    ), 60); // 3 seconds = 60 ticks
                 }
             }
         }
