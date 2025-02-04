@@ -1,0 +1,29 @@
+# Bot difficulty configurations
+difficulties:
+  Easy:
+    speed: 0.25
+    knockback: 0.3
+    vertical_knockback: 0.35
+    damage: 2
+    reach: 3.0
+  Medium:
+    speed: 0.35
+    knockback: 0.4
+    vertical_knockback: 0.45
+    damage: 3
+    reach: 3.5
+  Hard:
+    speed: 0.45
+    knockback: 0.5
+    vertical_knockback: 0.55
+    damage: 4
+    reach: 4.0
+
+# Messages configuration
+messages:
+  victory:
+    title: "§aVICTORY!"
+    subtitle: "§7You defeated the bot!"
+  defeat:
+    title: "§cLOSER"
+    subtitle: "§7Better luck next time!"
