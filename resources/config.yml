@@ -1,29 +1,83 @@
-# Bot difficulty configurations
+settings:
+  use_vanilla_knockback: false
+
+  default_values:
+    movement:
+      move_speed: 0.35
+      drag: 0.02
+      jump_velocity: 0.52
+      jump_delay: 10
+      base_gravity: 0.028
+      gravity_drag: 0.99
+      max_fall_speed: 0.4
+
+    combat:
+      attack_range: 3.5
+      visual_attack_range: 6.0
+      engage_range: 30.0
+      attack_cooldown_ticks: 10
+      path_update_interval: 5
+      max_hurt_time: 10
+
 difficulties:
   Easy:
-    speed: 0.25
-    knockback: 0.3
-    vertical_knockback: 0.35
+    speed: 0.28
+    knockback: 0.375
+    vertical_knockback: 0.45
     damage: 2
     reach: 3.0
+
   Medium:
-    speed: 0.35
+    speed: 0.32
     knockback: 0.4
-    vertical_knockback: 0.45
+    vertical_knockback: 0.5
     damage: 3
     reach: 3.5
+
   Hard:
-    speed: 0.45
-    knockback: 0.5
+    speed: 0.35
+    knockback: 0.425
     vertical_knockback: 0.55
     damage: 4
     reach: 4.0
 
-# Messages configuration
+equipment_presets:
+  Default:
+    armor:
+      helmet: "iron_helmet"
+      chestplate: "iron_chestplate"
+      leggings: "iron_leggings"
+      boots: "iron_boots"
+    weapon: "iron_sword"
+  
+  NoArmor:
+    armor:
+      helmet: ""
+      chestplate: ""
+      leggings: ""
+      boots: ""
+    weapon: "wooden_sword"
+  
+  FullDiamond:
+    armor:
+      helmet: "diamond_helmet"
+      chestplate: "diamond_chestplate"
+      leggings: "diamond_leggings"
+      boots: "diamond_boots"
+    weapon: "diamond_sword"
+  
+  Netherite:
+    armor:
+      helmet: "netherite_helmet"
+      chestplate: "netherite_chestplate"
+      leggings: "netherite_leggings"
+      boots: "netherite_boots"
+    weapon: "netherite_sword"
+
 messages:
   victory:
-    title: "§aVICTORY!"
+    title: "§l§aVICTORY!"
     subtitle: "§7You defeated the bot!"
   defeat:
-    title: "§cLOSER"
+    title: "§l§cLOSER"
     subtitle: "§7Better luck next time!"

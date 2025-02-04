@@ -1,14 +1,27 @@
 name: Bots
-version: 1.1.0
+version: 1.0.0
 main: chbya\Bots\Main
 api: [5.0.0]
-description: An advanced PvP bot plugin with queue system for PocketMine-MP
+author: chbya
+
 commands:
+  arena:
+    description: Manage PvP bot arenas
+    permission: pvpbots.arena.setup
   queue:
-    description: Join the PvP bot queue
-    usage: /queue
-    permission: bots.command.queue # Add a permission node
+    description: Queue for a PvP bot match
+    permission: pvpbots.queue
+  settings:
+    description: Configure PvP bot settings
+    permission: pvpbots.settings
+
 permissions:
-  bots.command.queue:
-    description: Allows the player to join the PvP bot queue
-    default: true # This makes the command accessible to all players by default
+  pvpbots.arena.setup:
+    description: Allows setting up PvP bot arenas
+    default: op
+  pvpbots.queue:
+    description: Allows queueing for PvP bot matches
+    default: true
+  pvpbots.settings:
+    description: Allows configuring PvP bot settings
+    default: true
